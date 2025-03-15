@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import os
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables from .env
+# Load environment variables
 load_dotenv()
 
 app = FastAPI()
@@ -15,21 +16,17 @@ SAMPLE_COUNT = 1
 PERSON_GENERATION = "allow"
 ASPECT_RATIO = "16:9"
 
-@app.post("/generate-image/")
-async def generate_image(request: Request):
-    try:
-        payload = await request.json()
-        prompt = payload.get('prompt')
-        if not prompt:
-            raise ValueError("Missing 'prompt' in request body.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+# Define a request model
+class ImageRequest(BaseModel):
+    prompt: str
 
+@app.post("/generate-image/")
+async def generate_image(request: ImageRequest):
     url = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict"
     headers = {'Content-Type': 'application/json'}
 
     data = {
-        "instances": [{"prompt": prompt}],
+        "instances": [{"prompt": request.prompt}],
         "parameters": {
             "sampleCount": SAMPLE_COUNT,
             "personGeneration": PERSON_GENERATION,
